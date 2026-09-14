@@ -19,6 +19,13 @@ To eliminate costly cloud API bills and enable air-gapped security research on c
 
 ---
 
+## 🖥️ Execution Proof & Terminal Output
+
+![Aegis Terminal Execution Demo](assets/aegis_demo.jpg)
+*Real-time multi-agent execution: Target scope decomposition, AFL++ fuzzing harness initialization, local DeepSeek-R1 7B failover, and automated `poc.py` exploit synthesis.*
+
+---
+
 ## 🏛️ System Architecture
 
 Aegis uses a **Manager-Worker hierarchical pattern**. The central Manager Agent decomposes the target scope, formulates a testing strategy, delegates sub-tasks to 3 specialized worker agents, and aggregates findings into structured Proof-of-Concept (PoC) exploits.
