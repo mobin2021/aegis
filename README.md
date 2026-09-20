@@ -138,3 +138,9 @@ python main.py --target ./targets/sample_binary --mode full-scan
 
 ## 📄 License
 Distributed under the MIT License. See `LICENSE` for more information.
+
+## 🔒 Public Repository Scope
+
+This repository is a sanitized public overview of Aegis. The complete implementation, research workflows, target integrations, operational configuration, and security-sensitive details are intentionally kept private because the tool is designed for authorized real-world security testing.
+
+The public documentation describes the project goals and high-level architecture without publishing capabilities or instructions that could enable misuse. Any testing must be performed only in an isolated environment with explicit authorization.
