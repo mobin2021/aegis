@@ -102,31 +102,26 @@ graph TD
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/yourhandle/aegis.git
+git clone https://github.com/mobin2021/aegis.git
 cd aegis
 
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Pull local reasoning model via Ollama
+# (Optional) Pull local reasoning model via Ollama for offline inference
 ollama pull deepseek-r1:7b
-```
-
-### Configuration (`config.yaml`)
-```yaml
-inference:
-  provider: "ollama"           # Options: "api" or "ollama"
-  local_model: "deepseek-r1:7b"
-  fallback_enabled: true
-
-target:
-  binary_path: "./targets/sample_binary"
-  fuzz_timeout_seconds: 300
 ```
 
 ### Running Aegis
 ```bash
-python main.py --target ./targets/sample_binary --mode full-scan
+# 1. Run autonomous assessment against stack buffer overflow benchmark
+python main.py --target benchmarks/stack_overflow.c --mode dual
+
+# 2. Run format string vulnerability audit
+python main.py --target benchmarks/format_string.c --mode dual
+
+# 3. Execute the automated test suite
+python -m unittest tests/test_pipeline.py
 ```
 
 ---

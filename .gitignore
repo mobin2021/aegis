@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / Binary build artifacts
+benchmarks/*.bin
+benchmarks/*.o
+benchmarks/*.out
+*.exe
+
+# Fuzzing outputs
+out/
+crashes/
+hangs/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
