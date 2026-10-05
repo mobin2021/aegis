@@ -15,6 +15,7 @@ class TestAegisPipeline(unittest.TestCase):
     def setUp(self):
         self.config = AegisConfig(
             target_path="benchmarks/stack_overflow.c",
+            inference_mode="offline",
             output_dir="aegis_output_test",
             poc_output_path="aegis_output_test/poc.py",
             report_output_path="aegis_output_test/audit_report.json",

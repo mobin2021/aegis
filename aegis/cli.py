@@ -40,9 +40,15 @@ def main():
     parser.add_argument(
         "--mode",
         "-m",
-        choices=["cloud", "ollama", "dual"],
+        choices=["gemini", "cloud", "ollama", "dual"],
         default="dual",
-        help="Inference mode: cloud API, local Ollama, or dual automatic fallback",
+        help="Inference mode: Google Gemini API, cloud API, local Ollama, or dual automatic fallback",
+    )
+    parser.add_argument(
+        "--gemini-key",
+        type=str,
+        default=None,
+        help="Google Gemini API key (or set GEMINI_API_KEY environment variable)",
     )
     parser.add_argument(
         "--output-dir",
@@ -64,6 +70,7 @@ def main():
     config = AegisConfig(
         target_path=str(target_path),
         inference_mode=args.mode,
+        gemini_api_key=args.gemini_key or AegisConfig().gemini_api_key,
         output_dir=args.output_dir,
         poc_output_path=f"{args.output_dir}/poc.py",
         report_output_path=f"{args.output_dir}/audit_report.json",

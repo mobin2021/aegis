@@ -1,0 +1,24 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00.500 --> 00:07.800
+Hi, I'm Mobin. Today I'm demonstrating Aegis, an autonomous multi-agent vulnerability assessment framework inspired by Google Project Zero methodologies.
+
+00:08.000 --> 00:16.500
+Our target is an industrial telemetry daemon. The Recon agent immediately dissects the ELF binary, mapping symbol tables and auditing compiler mitigations—noting stack canaries are disabled.
+
+00:17.000 --> 00:28.500
+The Decompiler agent traces inter-procedural AST call trees, isolating an unconstrained memory copy via strcpy directly into a fixed 64-byte stack frame with zero bounds checking.
+
+00:29.000 --> 00:41.500
+Aegis's neural reasoning engine models the stack layout, calculating the boundary distance from the buffer through the saved frame pointer to the return address.
+
+00:42.500 --> 00:53.000
+Next, the coverage-guided fuzz swarm executes over 3,600 mutations per second, catching a SIGSEGV crash and confirming instruction pointer control at exactly 72 bytes.
+
+00:53.500 --> 01:00.000
+The Exploit Synthesizer automatically packages the findings into a reproducible Python Proof-of-Concept and structured CVSS 9.8 critical triage report.
+
+01:00.500 --> 01:07.000
+Executing the generated PoC immediately validates the 72-byte RIP hijack payload. Autonomous triage to verified exploit in one minute. Thank you.

@@ -41,6 +41,7 @@ class PoCGeneratorWorker(BaseWorker):
         }
 
     def _generate_poc_script(self, target: str, vuln_type: str, offset: int) -> str:
+        posix_target = Path(target).as_posix()
         return f'''#!/usr/bin/env python3
 """
 =============================================================================
@@ -55,7 +56,7 @@ Offset to RIP: {offset} bytes
 import sys
 import subprocess
 
-TARGET = "{target}"
+TARGET = "{posix_target}"
 PADDING_LENGTH = {offset}
 
 def build_payload() -> bytes:

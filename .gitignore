@@ -8,11 +8,16 @@ benchmarks/*.bin
 benchmarks/*.o
 benchmarks/*.out
 *.exe
+*.mp4
+*.mkv
+*.avi
 
 # Fuzzing outputs
 out/
 crashes/
 hangs/
+aegis_output/
+aegis_output_test/
 
 # Environments
 .env

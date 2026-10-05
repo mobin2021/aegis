@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![Ollama Supported](https://img.shields.io/badge/Ollama-DeepSeek--R1%207B-orange.svg)](https://ollama.com/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-mobin.tech-blueviolet?style=flat)](https://mobin.tech#aegis-section)
 [![Security Toolchain](https://img.shields.io/badge/Toolchain-AFL%2B%2B%20%7C%20Ghidra%20%7C%20Nmap%20%7C%20Burp-red.svg)](#integrated-toolchains)
 
 ---
@@ -19,10 +20,13 @@ To eliminate costly cloud API bills and enable air-gapped security research on c
 
 ---
 
-## 🖥️ Execution Proof & Terminal Output
+## 🖥️ Execution Proof & Live Video Demo
 
-![Aegis Terminal Execution Demo](assets/aegis_demo.jpg)
+[![Aegis Terminal Execution Demo](assets/aegis_demo.jpg)](https://mobin.tech#aegis-section)
 *Real-time multi-agent execution: Target scope decomposition, AFL++ fuzzing harness initialization, local DeepSeek-R1 7B failover, and automated `poc.py` exploit synthesis.*
+
+> 🎬 **Watch the 60-Second Video Demo & Voiceover:**  
+> 👉 [**Watch live video verification on mobin.tech ↗**](https://mobin.tech#aegis-section)
 
 ---
 
@@ -113,15 +117,31 @@ ollama pull deepseek-r1:7b
 ```
 
 ### Running Aegis
+
+#### Interactive Demonstration (Google Gemini Free API)
+You can run the interactive standalone demonstration designed for screen recording and quick auditing:
+```bash
+# 1. (Optional) Set your free Google Gemini API key:
+# Windows PowerShell:  $env:GEMINI_API_KEY="AIzaSy..."
+# Linux/macOS:         export GEMINI_API_KEY="AIzaSy..."
+
+# 2. Run the 5-agent autonomous binary exploitation demo
+python demo_gemini_aegis.py --target benchmarks/stack_overflow.c
+
+# 3. Test other benchmarks (Format String or Off-By-One)
+python demo_gemini_aegis.py --target benchmarks/format_string.c
+```
+
+#### Core CLI Execution
 ```bash
 # 1. Run autonomous assessment against stack buffer overflow benchmark
-python main.py --target benchmarks/stack_overflow.c --mode dual
+python main.py --target benchmarks/stack_overflow.c --mode gemini
 
 # 2. Run format string vulnerability audit
 python main.py --target benchmarks/format_string.c --mode dual
 
 # 3. Execute the automated test suite
-python -m unittest tests/test_pipeline.py
+python -m unittest discover tests
 ```
 
 ---

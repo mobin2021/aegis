@@ -16,8 +16,10 @@ class AegisConfig:
     target_type: str = "binary"  # "binary", "source", or "network"
 
     # Dual-mode Inference
-    inference_mode: str = "dual"  # "cloud", "ollama", or "dual"
-    ollama_host: str = field(default_factory=lambda: os.getenv("OLLAMA_HOST", "http://localhost:11434"))
+    inference_mode: str = "dual"  # "gemini", "cloud", "ollama", or "dual"
+    gemini_api_key: Optional[str] = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", None))
+    gemini_model: str = "gemini-3.5-flash"
+    ollama_host: str = field(default_factory=lambda: os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"))
     ollama_model: str = field(default_factory=lambda: os.getenv("OLLAMA_MODEL", "deepseek-r1:7b"))
     remote_api_key: Optional[str] = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", None))
     remote_api_url: str = "https://api.deepseek.com/v1/chat/completions"
