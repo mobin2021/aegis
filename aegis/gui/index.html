@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis 2.0 — Binary Security Analysis Studio</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="liquid-glass-theme">
+  <!-- Acrylic Glass Container -->
+  <div class="app-shell">
+    
+    <!-- Frameless Titlebar -->
+    <header class="titlebar pywebview-drag-region">
+      <div class="brand">
+        <div class="brand-shield">
+          <svg width="18" height="20" viewBox="0 0 24 28" fill="none">
+            <path d="M12 1L2 5V12.5C2 19.5 6.3 25.8 12 27C17.7 25.8 22 19.5 22 12.5V5L12 1Z" 
+                  fill="url(#shield-grad)" stroke="#00f2ff" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M12 6L6 9V13.5C6 17.5 8.6 21.2 12 22C15.4 21.2 18 17.5 18 13.5V9L12 6Z" 
+                  fill="rgba(0, 242, 255, 0.15)"/>
+            <defs>
+              <linearGradient id="shield-grad" x1="2" y1="1" x2="22" y2="27" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00f2ff" stop-opacity="0.3"/>
+                <stop offset="1" stop-color="#7928ca" stop-opacity="0.5"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="brand-name">AEGIS <span class="version-tag">2.0</span></span>
+        <span class="build-spec">AEGIS STUDIO // DESKTOP EDITION</span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs no-drag">
+        <button class="nav-btn active" data-tab="checksec">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Mitigation Matrix
+        </button>
+        <button class="nav-btn" data-tab="cyclic">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          Memory Stack Lab
+        </button>
+        <button class="nav-btn" data-tab="scanner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+          Source Scanner
+        </button>
+      </nav>
+
+      <!-- Windows Controls -->
+      <div class="window-controls no-drag">
+        <button class="win-btn" id="btn-minimize" title="Minimize">
+          <svg width="10" height="10" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+        </button>
+        <button class="win-btn" id="btn-maximize" title="Maximize">
+          <svg width="10" height="10" viewBox="0 0 10 10"><rect width="9" height="9" x="0.5" y="0.5" fill="none" stroke="currentColor"/></svg>
+        </button>
+        <button class="win-btn close" id="btn-close" title="Close">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      
+      <!-- ================================================================ -->
+      <!-- TAB 1: CHECKSEC MATRIX                                          -->
+      <!-- ================================================================ -->
+      <section id="tab-checksec" class="tab-pane active">
+        <div class="pane-grid">
+          
+          <!-- Ingestion Dropzone -->
+          <div class="card glass-card dropzone-card" id="dropzone">
+            <div class="dropzone-content">
+              <div class="drop-icon-ring">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <h3 class="drop-title">Drop Binary (PE / ELF) Here</h3>
+              <p class="drop-desc">Windows EXE/DLL/SYS or Linux ELF x86/x64</p>
+              <div class="drop-actions">
+                <button class="btn btn-primary" id="btn-browse-binary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  Browse Files
+                </button>
+                <div class="quick-samples">
+                  <span>Samples:</span>
+                  <button class="chip-btn" data-sample="C:\Windows\System32\notepad.exe">notepad.exe</button>
+                  <button class="chip-btn" data-sample="C:\Windows\System32\cmd.exe">cmd.exe</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Live File Telemetry Header -->
+            <div class="telemetry-bar" id="binary-telemetry" style="display: none;">
+              <div class="telemetry-item">
+                <span class="label">FILE:</span>
+                <span class="val mono" id="t-filename">-</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="label">FORMAT:</span>
+                <span class="badge" id="t-format">-</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="label">SIZE:</span>
+                <span class="val mono" id="t-size">-</span>
+              </div>
+              <div class="telemetry-item full-width">
+                <span class="label">SHA-256:</span>
+                <span class="val mono hash-text" id="t-sha256">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4-Shield Mitigation Matrix -->
+          <div class="card glass-card shields-matrix-card">
+            <div class="card-header">
+              <h2 class="card-title">Binary Mitigation Matrix</h2>
+              <div class="shield-score" id="shield-score-badge">0 / 6 Hardened</div>
+            </div>
+
+            <div class="matrix-grid">
+              
+              <!-- Shield 1: NX / DEP -->
+              <div class="shield-box" id="shield-nx">
+                <div class="shield-glyph">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                  </svg>
+                </div>
+                <div class="shield-meta">
+                  <div class="shield-name">NX / DEP</div>
+                  <div class="shield-status">Awaiting Binary</div>
+                  <div class="shield-detail">Non-Executable Stack & Heap</div>
+                </div>
+              </div>
+
+              <!-- Shield 2: ASLR / PIE -->
+              <div class="shield-box" id="shield-aslr">
+                <div class="shield-glyph">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <polyline points="16 3 21 3 21 8"/>
+                    <line x1="4" y1="20" x2="21" y2="3"/>
+                    <polyline points="21 16 21 21 16 21"/>
+                    <line x1="15" y1="15" x2="21" y2="21"/>
+                    <line x1="4" y1="4" x2="9" y2="9"/>
+                  </svg>
+                </div>
+                <div class="shield-meta">
+                  <div class="shield-name">ASLR / PIE</div>
+                  <div class="shield-status">Awaiting Binary</div>
+                  <div class="shield-detail">Address Space Randomization</div>
+                </div>
+              </div>
+
+              <!-- Shield 3: Stack Canary -->
+              <div class="shield-box" id="shield-canary">
+                <div class="shield-glyph">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M12 8v4"/>
+                    <path d="M12 16h.01"/>
+                  </svg>
+                </div>
+                <div class="shield-meta">
+                  <div class="shield-name">Stack Canary</div>
+                  <div class="shield-status">Awaiting Binary</div>
+                  <div class="shield-detail">__security_cookie / -fstack-protector</div>
+                </div>
+              </div>
+
+              <!-- Shield 4: RELRO / CFG -->
+              <div class="shield-box" id="shield-relro">
+                <div class="shield-glyph">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <div class="shield-meta">
+                  <div class="shield-name">RELRO / CFG</div>
+                  <div class="shield-status">Awaiting Binary</div>
+                  <div class="shield-detail">Read-Only Relocations / Control Flow Guard</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Mitigation Evidence Table -->
+            <div class="mitigation-table-wrap">
+              <table class="glass-table" id="mitigation-table">
+                <thead>
+                  <tr>
+                    <th>Control</th>
+                    <th>Status</th>
+                    <th>Technical Finding & Header Proof</th>
+                    <th>CWE Tag</th>
+                  </tr>
+                </thead>
+                <tbody id="mitigation-tbody">
+                  <tr>
+                    <td colspan="4" class="empty-hint">Load or drop a binary to execute checksec analysis.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- TAB 2: MEMORY STACK & CYCLIC LAB                                -->
+      <!-- ================================================================ -->
+      <section id="tab-cyclic" class="tab-pane">
+        <div class="pane-grid-lab">
+          
+          <!-- Stack Frame Architecture Visualizer -->
+          <div class="card glass-card stack-visualizer-card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Stack Memory Layout & Buffer Overwrite Simulator</h2>
+                <p class="card-subtitle">Real-time simulation of x86/x86-64 stack frame boundary corruption into RBP & Saved RIP</p>
+              </div>
+              <div class="stack-status-pill" id="stack-status-pill">FRAME SAFE</div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="stack-controls">
+              <div class="control-group">
+                <label for="slider-bufsize">Local Buffer Size: <span class="val mono" id="val-bufsize">64</span> B</label>
+                <input type="range" id="slider-bufsize" min="16" max="256" step="16" value="64">
+              </div>
+
+              <div class="control-group">
+                <label for="slider-payload">Payload Injected: <span class="val mono" id="val-payload">80</span> B</label>
+                <input type="range" id="slider-payload" min="0" max="320" step="2" value="80">
+              </div>
+
+              <div class="toggle-group">
+                <label class="switch">
+                  <input type="checkbox" id="chk-canary" checked>
+                  <span class="slider round"></span>
+                </label>
+                <span class="switch-label">Stack Canary (/GS)</span>
+              </div>
+
+              <div class="toggle-group">
+                <label class="switch">
+                  <input type="checkbox" id="chk-arch64" checked>
+                  <span class="slider round"></span>
+                </label>
+                <span class="switch-label" id="label-arch">x86-64 (8-byte words)</span>
+              </div>
+            </div>
+
+            <!-- Interactive Stack Memory Strip -->
+            <div class="stack-canvas-wrap">
+              <div class="memory-addresses">
+                <span>Higher Addresses (Caller Frame)</span>
+                <span class="arrow-down">&darr; Stack grows downward &darr;</span>
+                <span>Lower Addresses ($RSP)</span>
+              </div>
+
+              <div class="stack-blocks-container" id="stack-blocks">
+                <!-- Dynamically populated stack frame segments -->
+              </div>
+            </div>
+
+            <!-- Telemetry Bar -->
+            <div class="stack-metrics">
+              <div class="metric-box">
+                <span class="m-title">DISTANCE TO RBP</span>
+                <span class="m-val mono" id="m-dist-rbp">72 B (0x48)</span>
+              </div>
+              <div class="metric-box alert-target">
+                <span class="m-title">DISTANCE TO RIP</span>
+                <span class="m-val mono" id="m-dist-rip">80 B (0x50)</span>
+              </div>
+              <div class="metric-box" id="box-canary-state">
+                <span class="m-title">CANARY INTEGRITY</span>
+                <span class="m-val mono" id="m-canary-state">INTACT</span>
+              </div>
+              <div class="metric-box" id="box-control-flow">
+                <span class="m-title">INSTRUCTION POINTER</span>
+                <span class="m-val mono" id="m-rip-state">NORMAL</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- De Bruijn Cyclic Generator & Crash Resolver -->
+          <div class="card glass-card cyclic-tool-card">
+            <div class="card-header">
+              <h2 class="card-title">De Bruijn Mathematical Cyclic Lab</h2>
+              <span class="badge">B(26, 4) MARTIN ALGORITHM</span>
+            </div>
+
+            <!-- Generator Section -->
+            <div class="cyclic-section">
+              <h3 class="section-title">1. Generate Non-Repeating Pattern</h3>
+              <div class="input-row">
+                <input type="number" id="input-cyclic-len" value="120" min="4" max="456976" class="glass-input">
+                <button class="btn btn-secondary" id="btn-gen-cyclic">Generate</button>
+                <button class="btn btn-icon" id="btn-copy-pattern" title="Copy to clipboard">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="pattern-preview mono" id="pattern-output">aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaa...</div>
+              <div class="meta-stats mono" id="pattern-meta">120 bytes | 117 unique 4-byte windows | 0.0263% De Bruijn coverage</div>
+            </div>
+
+            <!-- Resolver Section -->
+            <div class="cyclic-section">
+              <h3 class="section-title">2. Resolve Register Crash Hex to Exact Offset</h3>
+              <p class="section-desc">Paste register crash hex (e.g. <code>0x61616264</code> or <code>0x41416161</code>) or 4-char string:</p>
+              <div class="input-row">
+                <input type="text" id="input-crash-val" placeholder="0x61616264" value="0x61616264" class="glass-input mono">
+                <button class="btn btn-primary" id="btn-find-offset">Resolve Offset</button>
+              </div>
+              <div class="resolve-result-box" id="resolve-result">
+                <div class="res-label">RESOLVED OFFSET:</div>
+                <div class="res-val mono" id="res-offset-val">Offset: 42 (0x2A)</div>
+                <div class="res-hint" id="res-offset-hint">Overwrites target register at exactly byte 42 of input.</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- TAB 3: SOURCE SCANNER                                           -->
+      <!-- ================================================================ -->
+      <section id="tab-scanner" class="tab-pane">
+        <div class="scanner-layout">
+          
+          <!-- Scanner Header / Config -->
+          <div class="card glass-card scanner-header-card">
+            <div class="scan-target-bar">
+              <div class="input-with-label">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </span>
+                <input type="text" id="scan-path-input" placeholder="Path to C/C++ source file or directory..." class="glass-input mono">
+              </div>
+              <button class="btn btn-secondary" id="btn-browse-source">Browse</button>
+              <button class="btn btn-primary" id="btn-start-scan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Execute Static Audit
+              </button>
+            </div>
+
+            <!-- Severity Filter Pills -->
+            <div class="filter-bar">
+              <span class="filter-label">MINIMUM SEVERITY:</span>
+              <button class="filter-pill active" data-sev="info">All Findings</button>
+              <button class="filter-pill" data-sev="medium">Medium & Higher</button>
+              <button class="filter-pill" data-sev="high">High & Critical</button>
+              <button class="filter-pill" data-sev="critical">Critical Only</button>
+              <div class="scan-stats-summary" id="scan-summary-badge">No audit executed yet</div>
+            </div>
+          </div>
+
+          <!-- Scan Findings List -->
+          <div class="findings-scroll-area" id="findings-container">
+            <div class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+              <h3>Ready to Audit C/C++ Codebases</h3>
+              <p>Detects unbounded memory copies (CWE-120), stack overflows (CWE-121), format string leaks (CWE-134), and command injections (CWE-78).</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="app-statusbar">
+      <div class="status-left">
+        <span class="status-indicator online"></span>
+        <span class="status-msg" id="status-text">AEGIS 2.0 Core Engines Ready. WebView2 Connected.</span>
+      </div>
+      <div class="status-right">
+        <span class="status-item">ARCH: x86-64 / PE / ELF</span>
+        <span class="status-item">IPC: Python 3.12 Native</span>
+        <span class="status-item">Hardware-Accelerated Engine</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

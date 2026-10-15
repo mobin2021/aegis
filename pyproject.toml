@@ -1,0 +1,97 @@
+# =============================================================================
+# pyproject.toml — Aegis 2.0: Binary Security Analysis Framework & Studio
+# =============================================================================
+# Install locally:   pip install -e .
+# Run CLI:           aegis --help
+# Run GUI:           aegis gui
+# Run tests:         pytest
+# =============================================================================
+
+[build-system]
+requires      = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+# ── Project Metadata ──────────────────────────────────────────────────────────
+[project]
+name            = "aegis-studio"
+version         = "2.0.0"
+description     = "Binary Security Analysis Framework & Native Windows 11 Studio"
+readme          = "README.md"
+license         = { text = "MIT" }
+requires-python = ">=3.12"
+
+keywords = [
+    "security", "binary-analysis", "exploitation", "checksec",
+    "de-bruijn", "static-analysis", "CWE", "buffer-overflow",
+    "reverse-engineering", "ctf",
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: System :: Systems Administration",
+]
+
+# ── Runtime Dependencies ──────────────────────────────────────────────────────
+# Core modules are pure stdlib — zero mandatory third-party deps.
+# pywebview is optional: only required for `aegis gui`.
+dependencies = []
+
+[project.optional-dependencies]
+gui  = ["pywebview>=5.0"]
+dev  = [
+    "pytest>=8.0",
+    "pytest-subtests>=0.13",
+    "pywebview>=5.0",
+]
+
+
+# ── Console Scripts ───────────────────────────────────────────────────────────
+[project.scripts]
+aegis = "aegis.cli:main"
+
+
+# ── Project URLs ──────────────────────────────────────────────────────────────
+[project.urls]
+Homepage   = "https://github.com/mobin2021/aegis"
+Repository = "https://github.com/mobin2021/aegis"
+Issues     = "https://github.com/mobin2021/aegis/issues"
+
+
+# ── Package Discovery ─────────────────────────────────────────────────────────
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["aegis*"]
+exclude = ["tests*", "*.tests*"]
+
+[tool.setuptools.package-data]
+"aegis.gui" = ["*.html", "*.css", "*.js"]
+
+
+# ── Pytest Configuration ──────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts      = "-v --tb=short"
+
+# ── Coverage (optional, `pip install pytest-cov`) ─────────────────────────────
+[tool.coverage.run]
+source   = ["aegis"]
+omit     = ["aegis/gui/*", "*/tests/*", "*/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

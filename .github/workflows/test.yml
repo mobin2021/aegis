@@ -1,0 +1,113 @@
+# =============================================================================
+# .github/workflows/test.yml — Aegis 2.0 CI Pipeline
+# =============================================================================
+# Triggers : every push & every pull-request (any branch)
+# Matrix   : Python 3.12 on ubuntu-latest (core tests, no GUI)
+#            + windows-latest (full stack, optional GUI skipped)
+# Badge    : [![Tests](https://github.com/YOUR_USERNAME/aegis-studio/actions/
+#              workflows/test.yml/badge.svg)](...)
+# =============================================================================
+
+name: Tests
+
+on:
+  push:
+    branches: ["**"]          # every branch on push
+  pull_request:
+    branches: ["**"]          # every PR target
+
+# Cancel redundant in-progress runs on the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Core test suite (Linux) ─────────────────────────────────────────────────
+  test-linux:
+    name: "pytest · Python ${{ matrix.python-version }} · ubuntu-latest"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip                         # cache pip deps between runs
+
+      - name: Install package (editable) + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest — full suite
+        run: |
+          python -m pytest tests/ -v --tb=short --color=yes
+
+      - name: Upload coverage report (optional)
+        if: matrix.python-version == '3.12'
+        run: |
+          pip install pytest-cov --quiet
+          python -m pytest tests/ --cov=aegis --cov-report=xml --cov-report=term-missing -q
+        continue-on-error: true             # never fail CI if coverage step errors
+
+  # ── Core test suite (Windows) ───────────────────────────────────────────────
+  test-windows:
+    name: "pytest · Python ${{ matrix.python-version }} · windows-latest"
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package (editable) + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # On headless CI, pywebview/WebView2 is unavailable — skip GUI tests.
+      # Core tests (cyclic, checksec, source_scanner, bridge logic) run fine.
+      - name: Run pytest — full suite (GUI skipped on headless runner)
+        env:
+          AEGIS_HEADLESS: "1"               # bridge.py reads this to mock WebView
+        run: |
+          python -m pytest tests/ -v --tb=short --color=yes `
+            --ignore=tests/test_gui.py       # guard: ignore if a GUI-only test ever added
+
+  # ── Lint (optional, non-blocking) ───────────────────────────────────────────
+  lint:
+    name: "Ruff lint · Python 3.12 · ubuntu-latest"
+    runs-on: ubuntu-latest
+    continue-on-error: true                 # lint never blocks the Tests badge
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run ruff
+        run: ruff check aegis/ tests/ --output-format=github
