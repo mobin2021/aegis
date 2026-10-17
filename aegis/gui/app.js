@@ -129,11 +129,26 @@ function setupChecksec() {
   });
 
   browseBtn.addEventListener('click', async () => {
+    let path = null;
     if (window.pywebview?.api?.open_file_dialog) {
-      const path = await window.pywebview.api.open_file_dialog('binary');
-      if (path) {
-        inspectBinary(path);
+      try {
+        path = await window.pywebview.api.open_file_dialog('binary');
+      } catch (err) {
+        console.warn('Native dialog error:', err);
       }
+    }
+    if (path) {
+      inspectBinary(path);
+    } else {
+      document.getElementById('input-hidden-binary')?.click();
+    }
+  });
+
+  document.getElementById('input-hidden-binary')?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const filePath = file.path || file.name;
+      if (filePath) inspectBinary(filePath);
     }
   });
 
@@ -406,9 +421,25 @@ function setupScanner() {
   const pathInput = document.getElementById('scan-path-input');
 
   browseBtn.addEventListener('click', async () => {
+    let path = null;
     if (window.pywebview?.api?.open_file_dialog) {
-      const path = await window.pywebview.api.open_file_dialog('source');
-      if (path) pathInput.value = path;
+      try {
+        path = await window.pywebview.api.open_file_dialog('source');
+      } catch (err) {
+        console.warn('Native dialog error:', err);
+      }
+    }
+    if (path) {
+      pathInput.value = path;
+    } else {
+      document.getElementById('input-hidden-source')?.click();
+    }
+  });
+
+  document.getElementById('input-hidden-source')?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      pathInput.value = file.path || file.name;
     }
   });
 
@@ -496,18 +527,40 @@ function setupTriage() {
 
   // Browse file dialog
   browseBtn?.addEventListener('click', async () => {
+    let selected = null;
     if (window.pywebview?.api?.open_file_dialog) {
-      const selected = await window.pywebview.api.open_file_dialog('binary');
-      if (selected) {
-        pathInput.value = selected;
+      try {
+        selected = await window.pywebview.api.open_file_dialog('any');
+      } catch (err) {
+        console.warn('Native dialog error:', err);
       }
+    }
+    if (selected) {
+      pathInput.value = selected;
+    } else {
+      document.getElementById('input-hidden-triage')?.click();
+    }
+  });
+
+  document.getElementById('input-hidden-triage')?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      pathInput.value = file.path || file.name;
     }
   });
 
   // Load demo fixture
   demoBtn?.addEventListener('click', () => {
-    pathInput.value = 'tests/fixtures/vulnerable_demo.c';
-    updateStatus('Loaded demonstration fixture: tests/fixtures/vulnerable_demo.c');
+    pathInput.value = 'demo_real_world/auth_service.c';
+    updateStatus('Loaded real-world demonstration fixture: demo_real_world/auth_service.c');
+  });
+
+  // Quick 1-click test chips
+  document.querySelectorAll('.triage-sample-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      pathInput.value = chip.dataset.sample;
+      updateStatus(`Selected target: ${chip.dataset.sample}`);
+    });
   });
 
   // Editor sub-tabs switching

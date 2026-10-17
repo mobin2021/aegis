@@ -48,28 +48,100 @@ class AegisBridge:
         if self._window:
             self._window.destroy()
 
+    @staticmethod
+    def _resolve_target_path(clean_path: str) -> Path | None:
+        """
+        Robustly locate a target file across development and frozen PyInstaller runtimes.
+        """
+        import sys
+        p = Path(clean_path)
+        if p.exists() and p.is_file():
+            return p.resolve()
+
+        # Check relative to Current Working Directory
+        p_cwd = Path.cwd() / clean_path
+        if p_cwd.exists() and p_cwd.is_file():
+            return p_cwd.resolve()
+
+        # Check relative to parent directory (if running inside dist/)
+        p_parent = Path.cwd().parent / clean_path
+        if p_parent.exists() and p_parent.is_file():
+            return p_parent.resolve()
+
+        # Check relative to executable folder
+        if getattr(sys, "frozen", False):
+            exe_dir = Path(sys.executable).parent
+            p_exe = exe_dir / clean_path
+            if p_exe.exists() and p_exe.is_file():
+                return p_exe.resolve()
+            p_exe_parent = exe_dir.parent / clean_path
+            if p_exe_parent.exists() and p_exe_parent.is_file():
+                return p_exe_parent.resolve()
+            if hasattr(sys, "_MEIPASS"):
+                p_mei = Path(sys._MEIPASS) / clean_path
+                if p_mei.exists() and p_mei.is_file():
+                    return p_mei.resolve()
+
+        return None
+
     def open_file_dialog(self, file_types: str = "binary") -> str | None:
         """
         Open a native Windows file picker.
-        file_types: 'binary' (executables/libraries) or 'source' (C/C++ files)
+        file_types: 'binary' (executables/libraries), 'source' (C/C++ files), or 'any'
         """
-        if not self._window:
-            return None
-
         import webview
 
+        # Pywebview's Windows filter regex: r'^([\w ]+)\((\*(?:\.(?:\w+|\*))*(?:;\*(?:\.(?:\w+|\*))*)*)\)$'
+        # DO NOT use special characters like '/', '&', or '+' in descriptions!
         if file_types == "source":
-            file_filter = ("C/C++ Source Files (*.c;*.cpp;*.cc;*.h;*.hpp)", "All Files (*.*)")
+            file_filter = (
+                "C and Cpp Source Files (*.c;*.cpp;*.cc;*.h;*.hpp)",
+                "All Files (*.*)",
+            )
+        elif file_types == "binary":
+            file_filter = (
+                "Executable Files (*.exe;*.dll;*.sys;*.bin)",
+                "All Files (*.*)",
+            )
         else:
-            file_filter = ("Executables & Binaries (*.exe;*.dll;*.sys;*.so;*.bin;*)", "All Files (*.*)")
+            file_filter = (
+                "All Supported Files (*.c;*.cpp;*.exe;*.dll;*.h;*.bin)",
+                "All Files (*.*)",
+            )
 
-        result = self._window.create_file_dialog(
-            webview.OPEN_DIALOG,
-            allow_multiple=False,
-            file_types=file_filter,
-        )
-        if result and len(result) > 0:
-            return str(Path(result[0]).resolve())
+        # 1. Attempt pywebview native dialog
+        if self._window:
+            try:
+                result = self._window.create_file_dialog(
+                    webview.OPEN_DIALOG,
+                    allow_multiple=False,
+                    file_types=file_filter,
+                )
+                if result and len(result) > 0:
+                    return str(Path(result[0]).resolve())
+            except Exception:
+                pass
+
+        # 2. Resilient fallback: tkinter native file dialog
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            if file_types == "source":
+                patterns = [("C/C++ Source Files", "*.c *.cpp *.h *.cc *.hpp"), ("All Files", "*.*")]
+            elif file_types == "binary":
+                patterns = [("Executable Files", "*.exe *.dll *.sys *.bin"), ("All Files", "*.*")]
+            else:
+                patterns = [("All Supported Files", "*.c *.cpp *.h *.exe *.dll"), ("All Files", "*.*")]
+            chosen = filedialog.askopenfilename(filetypes=patterns)
+            root.destroy()
+            if chosen:
+                return str(Path(chosen).resolve())
+        except Exception:
+            pass
+
         return None
 
     # ── Checksec Service ──────────────────────────────────────────────────────
@@ -82,8 +154,8 @@ class AegisBridge:
         if not clean_path:
             return {"success": False, "error": "No file path provided."}
 
-        p = Path(clean_path)
-        if not p.exists() or not p.is_file():
+        p = self._resolve_target_path(clean_path)
+        if not p:
             return {"success": False, "error": f"File not found: {clean_path}"}
 
         try:
@@ -223,9 +295,15 @@ class AegisBridge:
         if not clean:
             return {"success": False, "error": "No source path provided."}
 
-        p = Path(clean)
-        if not p.exists():
-            return {"success": False, "error": f"Path not found: {clean}"}
+        p = self._resolve_target_path(clean)
+        if not p:
+            p_dir = Path(clean)
+            if p_dir.exists() and p_dir.is_dir():
+                p = p_dir
+            elif (Path.cwd() / clean).exists() and (Path.cwd() / clean).is_dir():
+                p = Path.cwd() / clean
+            else:
+                return {"success": False, "error": f"Path not found: {clean}"}
 
         try:
             results = source_scanner.scan(p, min_severity=min_severity)
@@ -283,8 +361,8 @@ class AegisBridge:
         if not clean:
             return {"success": False, "error": "No target path provided."}
 
-        p = Path(clean)
-        if not p.exists() or not p.is_file():
+        p = self._resolve_target_path(clean)
+        if not p:
             return {"success": False, "error": f"File not found: {clean}"}
 
         try:
