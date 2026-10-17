@@ -57,6 +57,7 @@ graphify-out/
 *.exe
 *.o
 *.obj
+*.spec
 demo_real_world/*.exe
 demo_real_world/auth_poc.py
 demo_real_world/auth_patch.diff

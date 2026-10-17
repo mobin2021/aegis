@@ -12,10 +12,17 @@ def launch_studio(debug: bool = False) -> None:
     """
     Launch the native Windows 11 Liquid Glass GUI desktop application.
     """
+    import sys
     import webview
     from aegis.bridge import AegisBridge
 
-    html_file = Path(__file__).parent / "index.html"
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        html_file = Path(sys._MEIPASS) / "aegis" / "gui" / "index.html"
+    else:
+        html_file = Path(__file__).parent / "index.html"
+
+    if not html_file.exists():
+        html_file = Path(__file__).parent / "index.html"
     if not html_file.exists():
         raise FileNotFoundError(f"GUI markup file not found at {html_file}")
 

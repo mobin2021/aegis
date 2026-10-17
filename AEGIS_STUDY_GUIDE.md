@@ -23,7 +23,7 @@ Watching these 10-15 minute videos will turn the text into clear mental pictures
 ---
 
 ### 📺 Topic 2: Checksec & Compiler Mitigations (Canary, NX, ASLR)
-*Maps to Aegis module:* [`aegis/tools/checksec.py`](file:///C:/Users/ZBook%20Firefly%2014%20G11/AEGIS%202.0/aegis/tools/checksec.py)
+*Maps to Aegis module:* [`aegis/core/checksec.py`](file:///C:/Users/ZBook%20Firefly%2014%20G11/AEGIS%202.0/aegis/core/checksec.py)
 1. **[LiveOverflow - 0x0E Stack Canaries / Cookies](https://www.youtube.com/watch?v=kYc5eL77Qqw)** (LiveOverflow, 11 mins)
    - *Why watch:* Shows why `__stack_chk_fail` exists and why Aegis checks for the `0x00` null byte in canary values.
 2. **[LiveOverflow - 0x09 Data Execution Prevention (DEP / NX)](https://www.youtube.com/watch?v=vduYd2q2Yvg)** (LiveOverflow, 8 mins)
@@ -34,7 +34,7 @@ Watching these 10-15 minute videos will turn the text into clear mental pictures
 ---
 
 ### 📺 Topic 3: Cyclic Patterns (De Bruijn Sequences)
-*Maps to Aegis module:* [`aegis/tools/cyclic.py`](file:///C:/Users/ZBook%20Firefly%2014%20G11/AEGIS%202.0/aegis/tools/cyclic.py) & [`poc_synthesizer.py`](file:///C:/Users/ZBook%20Firefly%2014%20G11/AEGIS%202.0/aegis/core/poc_synthesizer.py)
+*Maps to Aegis module:* [`aegis/core/cyclic.py`](file:///C:/Users/ZBook%20Firefly%2014%20G11/AEGIS%202.0/aegis/core/cyclic.py) & [`poc_synthesizer.py`](file:///C:/Users/ZBook%20Firefly%2014%20G11/AEGIS%202.0/aegis/core/poc_synthesizer.py)
 1. **[LiveOverflow - 0x0A Finding the exact buffer length with patterns](https://www.youtube.com/watch?v=yP5_0zYQ8g4)** (LiveOverflow, 9 mins)
    - *Why watch:* Shows exactly why sending `Aa0Aa1Aa2...` instantly calculates the crash offset without guessing numbers!
 
