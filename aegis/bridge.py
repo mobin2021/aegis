@@ -89,7 +89,13 @@ class AegisBridge:
         Open a native Windows file picker.
         file_types: 'binary' (executables/libraries), 'source' (C/C++ files), or 'any'
         """
-        import webview
+        try:
+            import importlib
+            wv = importlib.import_module("webview")
+            open_mode = getattr(wv, "OPEN_DIALOG", 10)
+        except Exception:
+            wv = None
+            open_mode = 10
 
         # Pywebview's Windows filter regex: r'^([\w ]+)\((\*(?:\.(?:\w+|\*))*(?:;\*(?:\.(?:\w+|\*))*)*)\)$'
         # DO NOT use special characters like '/', '&', or '+' in descriptions!
@@ -110,10 +116,10 @@ class AegisBridge:
             )
 
         # 1. Attempt pywebview native dialog
-        if self._window:
+        if self._window and wv is not None:
             try:
                 result = self._window.create_file_dialog(
-                    webview.OPEN_DIALOG,
+                    open_mode,
                     allow_multiple=False,
                     file_types=file_filter,
                 )
