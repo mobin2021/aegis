@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 void authenticate_user(const char *input) {
     char token_buffer[64];
