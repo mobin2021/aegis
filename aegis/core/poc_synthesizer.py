@@ -109,7 +109,7 @@ def construct_test_vector(offset: int, arch_bits: int = {arch}) -> bytes:
 
 def main():
     print("[*] Aegis 2.0 Autonomous Verification Harness")
-    print(f"[*] Target Architecture: x86_{{arch}}")
+    print(f"[*] Target Architecture: x86_{arch}")
     print(f"[*] Calculated Offset to Return Address: {offset_to_rip} bytes ({rip_hex})")
 
     target_bin = sys.argv[1] if len(sys.argv) > 1 else "{target_name}"
@@ -124,17 +124,39 @@ def main():
         sys.exit(0)
 
     test_vector = construct_test_vector({offset_to_rip}, {arch})
-    print(f"[*] Executing target: {{target_bin}} with {{len(test_vector)}} byte test vector...")
+    pass_as_argv = "--argv" in sys.argv
+    print(f"[*] Executing target: {{target_bin}} (mode: {{'argv' if pass_as_argv else 'stdin'}})...")
+
+    cmd = [os.path.abspath(target_bin)]
+    stdin_input = None
+    if pass_as_argv:
+        cmd.append(test_vector.decode("latin-1", errors="replace"))
+    else:
+        stdin_input = test_vector
+
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            # Suppress WerFault dialog: SEM_NOGPFAULTERRORBOX (0x0002) | SEM_FAILCRITICALERRORS (0x0001)
+            ctypes.windll.kernel32.SetErrorMode(0x0003)
+        except Exception:
+            pass
 
     try:
         proc = subprocess.run(
-            [os.path.abspath(target_bin)],
-            input=test_vector,
+            cmd,
+            input=stdin_input,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=5,
         )
         print(f"[*] Target completed with return code: {{proc.returncode}}")
+        if proc.returncode != 0:
+            print(f"[+] Target terminated abnormally (exit code {{proc.returncode}} / possible crash verified).")
+        if proc.stdout:
+            print(f"[*] stdout: {{proc.stdout.decode('utf-8', errors='replace').strip()}}")
+        if proc.stderr:
+            print(f"[*] stderr: {{proc.stderr.decode('utf-8', errors='replace').strip()}}")
     except subprocess.TimeoutExpired:
         print("[!] Execution timed out.")
     except Exception as exc:
