@@ -71,6 +71,42 @@ def _cmd_scan(args: argparse.Namespace) -> None:
     print(format_scan_report(results, color=not no_color, show_snippet=not no_snippet))
 
 
+def _cmd_triage(args: argparse.Namespace) -> None:
+    from aegis.core.pipeline import run_triage, format_triage_report
+
+    try:
+        res = run_triage(
+            args.target,
+            arch=args.arch,
+            buffer_override=args.buffer_size,
+        )
+    except FileNotFoundError as exc:
+        print(f"[!] {exc}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as exc:
+        print(f"[!] Triage error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    no_color = getattr(args, "no_color", False)
+    print(format_triage_report(res, color=not no_color))
+
+    if args.out_poc:
+        try:
+            with open(args.out_poc, "w", encoding="utf-8") as f:
+                f.write(res.poc_script)
+            print(f"\n[+] Wrote reproduction PoC harness to: {args.out_poc}")
+        except Exception as exc:
+            print(f"[!] Failed to write PoC file: {exc}", file=sys.stderr)
+
+    if args.out_patch and res.patch_result:
+        try:
+            with open(args.out_patch, "w", encoding="utf-8") as f:
+                f.write(res.patch_result.diff)
+            print(f"[+] Wrote mitigation patch unified diff to: {args.out_patch}")
+        except Exception as exc:
+            print(f"[!] Failed to write patch file: {exc}", file=sys.stderr)
+
+
 def _cmd_gui(args: argparse.Namespace) -> None:
     from aegis.gui import launch_studio
 
@@ -87,6 +123,21 @@ def main() -> None:
         description="Aegis 2.0 — Binary Security Analysis Framework & Studio",
     )
     sub = parser.add_subparsers(dest="command")
+
+    # ── triage ───────────────────────────────────────────────────────────────
+    trg = sub.add_parser("triage", help="Autonomous vulnerability triage, PoC & patch synthesis")
+    trg.add_argument("target", help="Target C/C++ source file or binary executable")
+    trg.add_argument("--arch", type=int, choices=[32, 64], default=64,
+                     help="Target architecture bitness (default: 64)")
+    trg.add_argument("--buffer-size", type=int, default=None,
+                     help="Override detected local buffer size in bytes")
+    trg.add_argument("--out-poc", metavar="PATH",
+                     help="Save synthesized Python PoC script to specified path")
+    trg.add_argument("--out-patch", metavar="PATH",
+                     help="Save synthesized unified diff patch to specified path")
+    trg.add_argument("--no-color", action="store_true",
+                     help="Disable ANSI colour output")
+    trg.set_defaults(func=_cmd_triage)
 
     # ── gui ──────────────────────────────────────────────────────────────────
     gui_p = sub.add_parser("gui", help="Launch native Windows 11 Liquid Glass GUI (Aegis Studio)")

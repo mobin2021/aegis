@@ -152,5 +152,38 @@ class TestBridgeSourceScanner(unittest.TestCase):
         self.assertFalse(res["success"])
 
 
+class TestBridgeTriage(unittest.TestCase):
+    """Test AegisBridge.run_triage."""
+
+    def setUp(self):
+        self.bridge = AegisBridge()
+
+    def test_run_triage_empty_path(self):
+        res = self.bridge.run_triage("")
+        self.assertFalse(res["success"])
+        self.assertIn("error", res)
+
+    def test_run_triage_nonexistent(self):
+        res = self.bridge.run_triage("C:\\fake\\nonexistent.c")
+        self.assertFalse(res["success"])
+        self.assertIn("error", res)
+
+    def test_run_triage_valid_source(self):
+        code = "void vuln(char *input) { char buffer[64]; strcpy(buffer, input); }"
+        f = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".c", encoding="utf-8")
+        f.write(code)
+        f.close()
+        p = Path(f.name)
+        try:
+            res = self.bridge.run_triage(str(p), arch=64)
+            self.assertTrue(res["success"])
+            self.assertEqual(res["target_type"], "source")
+            self.assertIsNotNone(res["frame_model"])
+            self.assertIsNotNone(res["poc_script"])
+            self.assertIsNotNone(res["patch"])
+        finally:
+            p.unlink()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

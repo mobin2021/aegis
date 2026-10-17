@@ -12,7 +12,7 @@ import struct
 from pathlib import Path
 from typing import Any
 
-from aegis.core import checksec, cyclic, source_scanner
+from aegis.core import checksec, cyclic, frame_model, patch_engineer, pipeline, poc_synthesizer, source_scanner
 
 
 class AegisBridge:
@@ -196,108 +196,22 @@ class AegisBridge:
         Calculate realistic x86 / x86-64 stack frame layout and overwrite boundaries.
         Returns block segments with exact byte offsets relative to buffer start.
         """
-        word_size = 8 if arch == 64 else 4
-        canary_size = word_size if has_canary else 0
-
-        # Memory alignment (typically 16-byte aligned frame on modern x86/x64 ABI)
-        raw_locals = buffer_size + canary_size
-        aligned_frame_size = (raw_locals + 15) & ~15
-        padding_size = aligned_frame_size - raw_locals
-
-        # Offset offsets from buffer start (0-indexed):
-        buf_start = 0
-        buf_end = buffer_size
-
-        canary_start = buf_end
-        canary_end = canary_start + canary_size
-
-        padding_start = canary_end
-        padding_end = padding_start + padding_size
-
-        rbp_start = padding_end
-        rbp_end = rbp_start + word_size
-
-        rip_start = rbp_end
-        rip_end = rip_start + word_size
-
-        total_frame = rip_end
-
-        # Generate sample payload slice for visual representation
         try:
-            payload_bytes = cyclic.generate(max(payload_len, 1))
-        except Exception:
-            payload_bytes = b"A" * payload_len
-
-        def segment_state(start: int, end: int) -> dict[str, Any]:
-            size = end - start
-            if size == 0:
-                return {"overwritten": False, "bytes_overwritten": 0, "pct": 0}
-            if payload_len <= start:
-                bytes_hit = 0
-            elif payload_len >= end:
-                bytes_hit = size
-            else:
-                bytes_hit = payload_len - start
-            return {
-                "overwritten": bytes_hit > 0,
-                "full_overwrite": bytes_hit == size,
-                "bytes_overwritten": bytes_hit,
-                "pct": round((bytes_hit / size) * 100, 1),
-            }
-
-        # Calculate exact crash offset: payload length needed to reach return address
-        offset_to_rip = rip_start
-
-        return {
-            "success": True,
-            "arch": arch,
-            "word_size": word_size,
-            "buffer_size": buffer_size,
-            "payload_len": payload_len,
-            "has_canary": has_canary,
-            "offset_to_rbp": rbp_start,
-            "offset_to_rip": rip_start,
-            "segments": {
-                "buffer": {
-                    "label": "Local Buffer [buf]",
-                    "start": buf_start,
-                    "end": buf_end,
-                    "size": buffer_size,
-                    "state": segment_state(buf_start, buf_end),
-                },
-                "canary": {
-                    "label": "Stack Canary (__stack_chk_guard)",
-                    "start": canary_start,
-                    "end": canary_end,
-                    "size": canary_size,
-                    "state": segment_state(canary_start, canary_end),
-                },
-                "padding": {
-                    "label": "Compiler ABI Alignment Padding",
-                    "start": padding_start,
-                    "end": padding_end,
-                    "size": padding_size,
-                    "state": segment_state(padding_start, padding_end),
-                },
-                "saved_rbp": {
-                    "label": f"Saved Frame Pointer ({'RBP' if arch == 64 else 'EBP'})",
-                    "start": rbp_start,
-                    "end": rbp_end,
-                    "size": word_size,
-                    "state": segment_state(rbp_start, rbp_end),
-                },
-                "saved_rip": {
-                    "label": f"Return Address ({'RIP' if arch == 64 else 'EIP'})",
-                    "start": rip_start,
-                    "end": rip_end,
-                    "size": word_size,
-                    "state": segment_state(rip_start, rip_end),
-                },
-            },
-            "control_flow_hijacked": payload_len >= rip_end,
-            "canary_triggered": has_canary and (payload_len > canary_start),
-            "payload_preview": payload_bytes[:payload_len].decode("ascii", errors="replace"),
-        }
+            layout = frame_model.model_stack_frame(
+                buffer_size=int(buffer_size),
+                payload_len=int(payload_len),
+                arch=int(arch),
+                has_canary=bool(has_canary),
+            )
+            data = layout.to_dict()
+            try:
+                payload_bytes = cyclic.generate(max(payload_len, 1))
+            except Exception:
+                payload_bytes = b"A" * payload_len
+            data["payload_preview"] = payload_bytes[:payload_len].decode("ascii", errors="replace")
+            return data
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
 
     # ── Source Scanner Service ────────────────────────────────────────────────
 
@@ -358,3 +272,23 @@ class AegisBridge:
             }
         except Exception as exc:
             return {"success": False, "error": f"Scan failed: {exc}"}
+
+    # ── Autonomous Triage Service ─────────────────────────────────────────────
+
+    def run_triage(self, target_path: str, arch: int = 64) -> dict[str, Any]:
+        """
+        Execute full autonomous vulnerability research & mitigation triage on a target file.
+        """
+        clean = target_path.strip().strip('"').strip("'")
+        if not clean:
+            return {"success": False, "error": "No target path provided."}
+
+        p = Path(clean)
+        if not p.exists() or not p.is_file():
+            return {"success": False, "error": f"File not found: {clean}"}
+
+        try:
+            res = pipeline.run_triage(p, arch=int(arch))
+            return res.to_dict()
+        except Exception as exc:
+            return {"success": False, "error": f"Autonomous triage failed: {exc}"}

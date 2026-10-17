@@ -49,3 +49,6 @@ desktop.ini
 .env
 .env.*
 *.log
+
+# Graphify AST cache
+graphify-out/

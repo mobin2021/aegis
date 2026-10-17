@@ -57,6 +57,12 @@
           </svg>
           Source Scanner
         </button>
+        <button class="nav-btn" data-tab="triage">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          Autonomous Triage
+        </button>
       </nav>
 
       <!-- Windows Controls -->
@@ -403,6 +409,223 @@
               <h3>Ready to Audit C/C++ Codebases</h3>
               <p>Detects unbounded memory copies (CWE-120), stack overflows (CWE-121), format string leaks (CWE-134), and command injections (CWE-78).</p>
             </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- TAB 4: AUTONOMOUS TRIAGE STATION                                 -->
+      <!-- ================================================================ -->
+      <section id="tab-triage" class="tab-pane">
+        <div class="triage-grid">
+          
+          <!-- Top Control Header -->
+          <div class="card glass-card triage-control-card">
+            <div class="triage-header-row">
+              <div class="triage-title-group">
+                <div class="triage-icon-disc">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="triage-title">Autonomous Vulnerability &amp; Mitigation Station</h3>
+                  <p class="triage-subtitle">Automated Recon ➔ AST Sink Discovery ➔ Stack Frame Modeling ➔ PoC &amp; Patch Synthesis</p>
+                </div>
+              </div>
+
+              <!-- Arch Selector & CTA -->
+              <div class="triage-controls-actions">
+                <div class="pill-select-group">
+                  <span class="ctrl-label">TARGET ARCH:</span>
+                  <select id="triage-arch-select" class="glass-select">
+                    <option value="64" selected>x86-64 (64-bit)</option>
+                    <option value="32">x86-32 (32-bit)</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-glow" id="btn-run-triage">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  Execute Autonomous Triage
+                </button>
+              </div>
+            </div>
+
+            <!-- Path Ingestion Bar -->
+            <div class="triage-input-bar">
+              <div class="path-input-wrapper">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <input type="text" id="triage-path-input" class="glass-input" placeholder="Select target file (.c, .cpp, .exe, .elf) or click Browse..." spellcheck="false">
+              </div>
+              <button class="btn btn-secondary" id="btn-triage-browse">Browse Target</button>
+              <button class="btn btn-secondary" id="btn-triage-demo">Load Demo Fixture</button>
+            </div>
+
+            <!-- 4-Stage Pipeline Stepper -->
+            <div class="pipeline-stepper" id="pipeline-stepper">
+              <div class="step-item" id="step-recon">
+                <div class="step-num">1</div>
+                <div class="step-meta">
+                  <span class="step-name">Target Recon</span>
+                  <span class="step-desc">Header &amp; Mitigations</span>
+                </div>
+              </div>
+              <div class="step-connector"></div>
+              <div class="step-item" id="step-sinks">
+                <div class="step-num">2</div>
+                <div class="step-meta">
+                  <span class="step-name">Sink Discovery</span>
+                  <span class="step-desc">AST &amp; Taint Flow</span>
+                </div>
+              </div>
+              <div class="step-connector"></div>
+              <div class="step-item" id="step-frame">
+                <div class="step-num">3</div>
+                <div class="step-meta">
+                  <span class="step-name">Frame Boundary</span>
+                  <span class="step-desc">RIP/EIP Overwrite</span>
+                </div>
+              </div>
+              <div class="step-connector"></div>
+              <div class="step-item" id="step-synth">
+                <div class="step-num">4</div>
+                <div class="step-meta">
+                  <span class="step-name">PoC &amp; Hardening</span>
+                  <span class="step-desc">Repro &amp; Safe Patch</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Triage Split Display -->
+          <div class="triage-workspace" id="triage-workspace">
+            
+            <!-- Left Column: Telemetry & Memory Boundary -->
+            <div class="triage-col-left">
+              
+              <!-- Target Summary Card -->
+              <div class="card glass-card triage-summary-card">
+                <div class="card-header">
+                  <span class="card-title">Target Telemetry</span>
+                  <span class="badge" id="triage-target-type-badge">READY</span>
+                </div>
+                <div class="triage-meta-grid" id="triage-meta-grid">
+                  <div class="meta-item">
+                    <span class="meta-lbl">TARGET FILE</span>
+                    <span class="meta-val" id="triage-meta-name">—</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-lbl">ARCHITECTURE</span>
+                    <span class="meta-val" id="triage-meta-arch">—</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-lbl">FILE FORMAT</span>
+                    <span class="meta-val" id="triage-meta-format">—</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-lbl">VULN SINKS</span>
+                    <span class="meta-val" id="triage-meta-sinks">—</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Memory Boundary Card -->
+              <div class="card glass-card triage-memory-card">
+                <div class="card-header">
+                  <span class="card-title">Instruction Pointer Memory Boundary</span>
+                  <span class="badge badge-pulse" id="triage-boundary-badge">ABI MODEL</span>
+                </div>
+                <div class="memory-boundary-readout">
+                  <div class="boundary-metric">
+                    <span class="b-lbl">LOCAL BUFFER</span>
+                    <span class="b-val" id="triage-b-buffer">—</span>
+                  </div>
+                  <div class="boundary-metric">
+                    <span class="b-lbl">OFFSET TO RBP</span>
+                    <span class="b-val" id="triage-b-rbp">—</span>
+                  </div>
+                  <div class="boundary-metric critical">
+                    <span class="b-lbl">RETURN ADDR (RIP)</span>
+                    <span class="b-val highlight-rose" id="triage-b-rip">—</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vulnerability Findings Card -->
+              <div class="card glass-card triage-findings-card">
+                <div class="card-header">
+                  <span class="card-title">Root-Cause Findings</span>
+                </div>
+                <div class="triage-findings-list" id="triage-findings-list">
+                  <div class="empty-state-sm">No target analyzed yet. Load a target or demo fixture above.</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Column: PoC Code & Mitigation Diff Tabs -->
+            <div class="triage-col-right">
+              <div class="card glass-card triage-editor-card">
+                <div class="editor-header">
+                  <div class="editor-tabs">
+                    <button class="editor-tab active" data-editor-tab="poc">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                      </svg>
+                      Synthesized PoC Harness (poc.py)
+                    </button>
+                    <button class="editor-tab" data-editor-tab="patch">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      </svg>
+                      Mitigation Patch (patch.diff)
+                    </button>
+                    <button class="editor-tab" data-editor-tab="flags">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      </svg>
+                      Compiler Hardening
+                    </button>
+                  </div>
+                  <div class="editor-actions">
+                    <button class="btn btn-xs" id="btn-copy-editor">Copy Content</button>
+                  </div>
+                </div>
+
+                <!-- Pane 1: PoC Script -->
+                <div class="editor-body active" id="pane-poc">
+                  <pre class="code-view"><code id="triage-poc-code"># Standalone deterministic crash test vector will appear here upon triage execution...</code></pre>
+                </div>
+
+                <!-- Pane 2: Mitigation Unified Diff -->
+                <div class="editor-body" id="pane-patch">
+                  <pre class="code-view diff-view"><code id="triage-patch-diff"># Unified mitigation diff will be synthesized here...</code></pre>
+                </div>
+
+                <!-- Pane 3: Compiler Hardening -->
+                <div class="editor-body" id="pane-flags">
+                  <div class="hardening-flags-content" id="triage-flags-content">
+                    <p class="flags-desc">Recommended compiler protection flags to prevent stack-based buffer exploitation:</p>
+                    <div class="flag-block">
+                      <span class="flag-toolchain">GCC / Clang Flags</span>
+                      <pre><code>-fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now -fPIE -pie -Wformat -Wformat-security</code></pre>
+                    </div>
+                    <div class="flag-block">
+                      <span class="flag-toolchain">Microsoft Visual C++ (MSVC) Flags</span>
+                      <pre><code>/GS /DYNAMICBASE /NXCOMPAT /guard:cf /sdl /W4</code></pre>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
           </div>
 
         </div>

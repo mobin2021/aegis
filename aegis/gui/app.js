@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupChecksec();
   setupStackLab();
   setupScanner();
+  setupTriage();
 
   // If running standalone in Edge/Chrome for preview, give simulated bridge
   setTimeout(() => {
@@ -484,6 +485,202 @@ async function executeScan(path) {
   updateStatus(`Source audit finished: ${res.total_findings} vulnerabilities found across ${res.files_scanned} files.`);
 }
 
+// ── Autonomous Triage Station ──────────────────────────────────────────────
+function setupTriage() {
+  const browseBtn = document.getElementById('btn-triage-browse');
+  const demoBtn = document.getElementById('btn-triage-demo');
+  const runBtn = document.getElementById('btn-run-triage');
+  const pathInput = document.getElementById('triage-path-input');
+  const archSelect = document.getElementById('triage-arch-select');
+  const copyBtn = document.getElementById('btn-copy-editor');
+
+  // Browse file dialog
+  browseBtn?.addEventListener('click', async () => {
+    if (window.pywebview?.api?.open_file_dialog) {
+      const selected = await window.pywebview.api.open_file_dialog('binary');
+      if (selected) {
+        pathInput.value = selected;
+      }
+    }
+  });
+
+  // Load demo fixture
+  demoBtn?.addEventListener('click', () => {
+    pathInput.value = 'tests/fixtures/vulnerable_demo.c';
+    updateStatus('Loaded demonstration fixture: tests/fixtures/vulnerable_demo.c');
+  });
+
+  // Editor sub-tabs switching
+  const editorTabs = document.querySelectorAll('.editor-tab');
+  editorTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetPane = tab.dataset.editorTab;
+      editorTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      document.querySelectorAll('.editor-body').forEach(body => {
+        body.classList.remove('active');
+      });
+      const activeBody = document.getElementById(`pane-${targetPane}`);
+      if (activeBody) activeBody.classList.add('active');
+    });
+  });
+
+  // Copy active editor content
+  copyBtn?.addEventListener('click', () => {
+    const activePane = document.querySelector('.editor-body.active');
+    if (!activePane) return;
+    const text = activePane.innerText || activePane.textContent;
+    navigator.clipboard?.writeText(text).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+    });
+  });
+
+  // Run Triage
+  runBtn?.addEventListener('click', async () => {
+    const targetPath = pathInput.value.trim();
+    if (!targetPath) {
+      updateStatus('Please enter or browse a target path before running triage.');
+      pathInput.focus();
+      return;
+    }
+
+    const arch = parseInt(archSelect.value, 10) || 64;
+    runBtn.disabled = true;
+    runBtn.innerHTML = `
+      <svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+        <path d="M12 2a10 10 0 0 1 10 10" />
+      </svg>
+      Triaging Target...
+    `;
+
+    // Reset stepper
+    const steps = ['step-recon', 'step-sinks', 'step-frame', 'step-synth'];
+    steps.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.remove('completed', 'active'); }
+    });
+
+    // Animate stage 1
+    document.getElementById('step-recon')?.classList.add('active');
+    updateStatus(`[1/4] Running Target Recon on ${targetPath}...`);
+
+    try {
+      setTimeout(() => {
+        document.getElementById('step-recon')?.classList.add('completed');
+        document.getElementById('step-sinks')?.classList.add('active');
+        updateStatus(`[2/4] Parsing AST memory sinks and taint flows...`);
+      }, 200);
+
+      setTimeout(() => {
+        document.getElementById('step-sinks')?.classList.add('completed');
+        document.getElementById('step-frame')?.classList.add('active');
+        updateStatus(`[3/4] Modeling stack frame boundary & RIP offsets...`);
+      }, 400);
+
+      const res = await window.pywebview.api.run_triage(targetPath, arch);
+
+      setTimeout(() => {
+        document.getElementById('step-frame')?.classList.add('completed');
+        document.getElementById('step-synth')?.classList.add('active', 'completed');
+        renderTriageResults(res);
+      }, 600);
+
+    } catch (err) {
+      console.error(err);
+      updateStatus(`Triage execution failed: ${err}`);
+    } finally {
+      setTimeout(() => {
+        runBtn.disabled = false;
+        runBtn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Execute Autonomous Triage
+        `;
+      }, 800);
+    }
+  });
+}
+
+function renderTriageResults(res) {
+  if (!res || !res.success) {
+    updateStatus(`Triage failed: ${res ? res.error : 'Unknown error'}`);
+    return;
+  }
+
+  // Telemetry metadata
+  const nameEl = document.getElementById('triage-meta-name');
+  const archEl = document.getElementById('triage-meta-arch');
+  const formatEl = document.getElementById('triage-meta-format');
+  const sinksEl = document.getElementById('triage-meta-sinks');
+  const typeBadge = document.getElementById('triage-target-type-badge');
+
+  if (nameEl) nameEl.textContent = res.target_name || '—';
+  if (archEl) archEl.textContent = `x86-${res.arch} (${res.arch}-bit)`;
+  if (formatEl) formatEl.textContent = res.recon?.format || res.target_type?.toUpperCase();
+  if (sinksEl) sinksEl.textContent = `${res.findings_count} Sinks Detected`;
+  if (typeBadge) {
+    typeBadge.textContent = res.target_type?.toUpperCase() || 'TARGET';
+    typeBadge.className = `badge ${res.findings_count > 0 ? 'badge-rose' : 'badge-emerald'}`;
+  }
+
+  // Memory Boundary metrics
+  const bBuffer = document.getElementById('triage-b-buffer');
+  const bRbp = document.getElementById('triage-b-rbp');
+  const bRip = document.getElementById('triage-b-rip');
+
+  if (res.frame_model) {
+    if (bBuffer) bBuffer.textContent = `${res.frame_model.buffer_size} Bytes`;
+    if (bRbp) bRbp.textContent = `+${res.frame_model.offset_to_rbp}B`;
+    if (bRip) {
+      const ripHex = `0x${res.frame_model.offset_to_rip.toString(16).toUpperCase()}`;
+      bRip.textContent = `+${res.frame_model.offset_to_rip}B (${ripHex})`;
+    }
+  }
+
+  // Findings list
+  const findingsList = document.getElementById('triage-findings-list');
+  if (findingsList) {
+    findingsList.innerHTML = '';
+    if (res.findings && res.findings.length > 0) {
+      res.findings.forEach((f) => {
+        const item = document.createElement('div');
+        item.className = 'triage-finding-item';
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <span class="sev-badge sev-${f.severity}">${f.severity.toUpperCase()}</span>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan);">${escapeHtml(f.cwe)}</span>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: #fff; margin-bottom: 2px;">
+            ${escapeHtml(f.sink)}() @ Line ${f.line}
+          </div>
+          <div style="font-size: 10.5px; color: var(--text-dim); line-height: 1.4;">
+            ${escapeHtml(f.detail)}
+          </div>
+        `;
+        findingsList.appendChild(item);
+      });
+    } else {
+      findingsList.innerHTML = '<div class="empty-state-sm" style="color: var(--accent-emerald);">[✓] No static memory sinks flagged in parsed scope.</div>';
+    }
+  }
+
+  // Editors
+  const pocEl = document.getElementById('triage-poc-code');
+  const patchEl = document.getElementById('triage-patch-diff');
+
+  if (pocEl) pocEl.textContent = res.poc_script || '# No PoC generated.';
+  if (patchEl) {
+    patchEl.textContent = res.patch?.diff || '# No source code modifications required for binary target.';
+  }
+
+  updateStatus(`Autonomous Triage finished for ${res.target_name}: Offset to RIP = +${res.offset_to_rip}B | ${res.findings_count} sinks.`);
+}
+
 // ── Utility Helpers ─────────────────────────────────────────────────────────
 function escapeHtml(str) {
   if (!str) return '';
@@ -576,6 +773,30 @@ function setupMockBridge() {
           }],
           errors: [],
         }],
+      }),
+      run_triage: async (path, arch) => ({
+        success: true,
+        target_path: path,
+        target_name: 'vulnerable_demo.c',
+        target_type: 'source',
+        arch: arch || 64,
+        recon: { format: 'C/C++ Source Code', lines: 18 },
+        findings_count: 2,
+        findings: [
+          { file: path, line: 7, col: 5, cwe: 'CWE-120', severity: 'critical', sink: 'strcpy', detail: 'Unbounded strcpy() memory copy.' },
+          { file: path, line: 9, col: 5, cwe: 'CWE-134', severity: 'critical', sink: 'printf', detail: 'Non-literal format string sink.' },
+        ],
+        frame_model: {
+          buffer_size: 64,
+          offset_to_rbp: 64,
+          offset_to_rip: 72,
+          has_canary: false,
+        },
+        offset_to_rip: 72,
+        poc_script: '# Aegis 2.0 Autonomous Verification Vector\\n# Target: vulnerable_demo.c | Arch: x86_64\\ndef main():\\n    print("[*] PoC executed successfully.")\\n',
+        patch: {
+          diff: '--- a/target.c\\n+++ b/target.c\\n@@ -7,3 +7,3 @@\\n-    strcpy(session_buffer, user_payload);\\n+    snprintf(session_buffer, sizeof(session_buffer), "%s", user_payload);\\n',
+        },
       }),
     },
   };
